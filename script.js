@@ -1,20 +1,35 @@
-// Updated Game Data
+// Game Data
 const actionCards = [
-  { text: "Jesus says, 'Come, follow Me!' Move ahead 2 spaces.", points: 1 },
-  { text: "Preach the Gospel! Recite John 3:16 to gain 1 point.", points: 1 },
-  { text: "Walk on Water! Balance a book on your head for 5 seconds.", points: 2 },
-  { text: "Heal the Sick! Pretend to touch someone’s shoulder and say, 'Be healed!'", points: 1 }
+  { 
+    text: "Jesus says, 'Come, follow Me!' Move ahead 2 spaces.", 
+    points: 1,
+    isPhysical: false // No confirmation needed
+  },
+  { 
+    text: "Walk on Water! Balance a book on your head for 5 seconds.", 
+    points: 2,
+    isPhysical: true // Requires confirmation
+  },
+  { 
+    text: "Heal the Sick! Touch a friend's shoulder and say, 'Be healed!'", 
+    points: 1,
+    isPhysical: true 
+  },
+  { 
+    text: "Preach the Gospel! Say John 3:16 out loud.", 
+    points: 1,
+    isPhysical: false 
+  }
 ];
 
 const quizCards = [
   { question: "Name two fishermen disciples.", answer: "peter,andrew,james,john", points: 2 },
-  { question: "What was Matthew's job?", answer: "tax collector", points: 2 },
-  { question: "How many loaves fed the 5,000?", answer: "5", points: 1 }
+  { question: "What was Matthew's job?", answer: "tax collector", points: 2 }
 ];
 
 // Game Variables
 let score = 0;
-let usedQuizCards = []; // Tracks asked questions to avoid repeats
+let usedQuizCards = [];
 
 // DOM Elements
 const scoreDisplay = document.getElementById("score");
@@ -24,18 +39,13 @@ const messageDisplay = document.getElementById("message");
 
 // Draw Card Function
 drawButton.addEventListener("click", () => {
-  if (score >= 10) return; // Stop if already won
+  if (score >= 10) return;
 
-  // Randomly pick action (70%) or quiz (30%)
-  const isQuizCard = Math.random() < 0.3 && quizCards.length > 0;
+  // 70% action card, 30% quiz card (if available)
+  const isQuizCard = Math.random() < 0.3 && quizCards.length > usedQuizCards.length;
 
   if (isQuizCard) {
-    // Get a random UNUSED quiz card
     const availableQuizzes = quizCards.filter((_, index) => !usedQuizCards.includes(index));
-    if (availableQuizzes.length === 0) {
-      messageDisplay.textContent = "No more quiz cards! Draw again.";
-      return;
-    }
     const randomQuiz = availableQuizzes[Math.floor(Math.random() * availableQuizzes.length)];
     const quizIndex = quizCards.indexOf(randomQuiz);
     usedQuizCards.push(quizIndex);
@@ -43,16 +53,28 @@ drawButton.addEventListener("click", () => {
     const userAnswer = prompt(randomQuiz.question);
     if (userAnswer && randomQuiz.answer.toLowerCase().includes(userAnswer.toLowerCase())) {
       score += randomQuiz.points;
-      messageDisplay.textContent = `Correct! +${randomQuiz.points} Points`;
+      messageDisplay.textContent = `✅ Correct! +${randomQuiz.points} Points`;
     } else {
-      messageDisplay.textContent = `Almost! Answer: ${randomQuiz.answer}`;
+      messageDisplay.textContent = `❌ Answer: ${randomQuiz.answer}`;
     }
   } else {
     // Action card
     const randomAction = actionCards[Math.floor(Math.random() * actionCards.length)];
     cardDisplay.textContent = randomAction.text;
-    score += randomAction.points;
-    messageDisplay.textContent = `Challenge complete! +${randomAction.points} Point(s)`;
+
+    if (randomAction.isPhysical) {
+      const confirmed = confirm("Did you complete the physical challenge?\nClick OK if yes!");
+      if (confirmed) {
+        score += randomAction.points;
+        messageDisplay.textContent = `🎉 Challenge completed! +${randomAction.points} Points`;
+      } else {
+        messageDisplay.textContent = "Keep practicing! Try again next time.";
+      }
+    } else {
+      // Non-physical actions auto-complete
+      score += randomAction.points;
+      messageDisplay.textContent = `✨ +${randomAction.points} Point(s)`;
+    }
   }
 
   // Update UI
@@ -62,7 +84,7 @@ drawButton.addEventListener("click", () => {
   if (score >= 10) {
     cardDisplay.innerHTML = `
       <h2>🎉 You Win! 🎉</h2>
-      <p>Jesus says, "Well done, good and faithful servant!" (Matthew 25:23)</p>
+      <p>"Well done, good and faithful servant!" (Matthew 25:23)</p>
       <button onclick="location.reload()">Play Again</button>
     `;
     drawButton.disabled = true;
